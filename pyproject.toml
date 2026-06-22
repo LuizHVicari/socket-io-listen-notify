@@ -6,4 +6,99 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "fastapi[standard]>=0.138.0",
+    "gunicorn>=23.0.0",
+    "psycopg[binary,pool]>=3.3.4",
 ]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=8.3.0",
+    "pytest-asyncio>=1.0.0",
+    "ruff>=0.11.0",
+    "ty>=0.0.1",
+]
+
+# ── Ruff ─────────────────────────────────────────────────────────────────────
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+indent-width = 4
+exclude = [".git", ".ruff_cache", ".venv", "venv", "build", "dist", "migrations"]
+
+[tool.ruff.lint]
+select = [
+    "F",     # pyflakes
+    "B",     # flake8-bugbear
+    "SIM",   # flake8-simplify
+    "C4",    # flake8-comprehensions
+    "UP",    # pyupgrade
+    "TCH",   # flake8-type-checking
+    "ASYNC", # flake8-async
+    "FAST",  # fastapi
+    "S",     # flake8-bandit (security)
+    "N",     # pep8-naming
+    "DTZ",   # flake8-datetimez
+    "PERF",  # perflint
+    "I",     # isort
+    "PL",    # pylint
+    "ARG",   # flake8-unused-arguments
+    "ANN",   # flake8-annotations
+    "RUF",   # ruff-specific
+]
+ignore = [
+    # style — ruff format handles these
+    "E", "W",
+    # FastAPI dependency injection (Depends) in function signatures
+    "B008",
+    # common false-positives in non-public code
+    "S104", "S105", "S106", "S107",
+    # subprocess with shell=False is fine (we check args explicitly)
+    "S603", "S607",
+    # allow CamelCase in non-class contexts (e.g. TypeVar, NamedTuple)
+    "N803", "N806",
+    # complexity limits that hurt readability more than they help
+    "PLR0913", "PLR0911", "PLR0912",
+    # magic value comparison — too noisy for small apps
+    "PLR2004",
+    # broad exception messages in pytest.raises
+    "PT011",
+    # TCH001-003: keep all imports at top-level (simpler, no guard blocks needed)
+    "TC001", "TC002", "TC003",
+]
+
+[tool.ruff.lint.flake8-bandit]
+check-typed-exception = true
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+split-on-trailing-comma = true
+known-first-party = ["app"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "PLR2004", "ANN"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+skip-magic-trailing-comma = false
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+
+# ── ty ───────────────────────────────────────────────────────────────────────
+
+[tool.ty.environment]
+python-version = "3.14"
+
+[tool.ty.src]
+exclude = ["**/__pycache__", ".venv", "venv", "build", "dist"]
+
+# ── pytest ───────────────────────────────────────────────────────────────────
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
