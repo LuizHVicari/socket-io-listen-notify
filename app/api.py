@@ -1,10 +1,13 @@
+import os
 from typing import Literal
 
-from fastapi import FastAPI, WebSocket
+import socketio
+from fastapi import FastAPI
 from pydantic import BaseModel
 
-from app.db import Connection, Listener
+from app.db import Connection
 from app.lifespan import lifespan
+from app.socket_server import Sio, sio
 
 app = FastAPI(lifespan=lifespan)
 
@@ -24,17 +27,22 @@ async def health_check(connection: Connection) -> HealthCheckResponse:
     return HealthCheckResponse(api="healthy", postgres=postgres)
 
 
-@app.websocket("/{channel}")
-async def websocket_listener(channel: str, websocket: WebSocket, listener: Listener) -> None:
-    await websocket.accept()
-    # Blocks forwarding each NOTIFY payload to the client until disconnect.
-    await listener.listen(channel, websocket.send_text)
-
-
 class NotifyRequest(BaseModel):
     message: str
 
 
+class NotifyResponse(BaseModel):
+    pid: int
+
+
 @app.post("/notify/{channel}")
-async def notify(channel: str, request: NotifyRequest, listener: Listener) -> None:
-    await listener.notify(channel, request.message)
+async def notify(channel: str, request: NotifyRequest, sio: Sio) -> NotifyResponse:
+    # Formal Socket.IO emit: the pub/sub manager propagates it across workers.
+    await sio.emit("message", request.message, room=channel)
+    # PID of the worker that handled this request (lets tests prove fan-out).
+    return NotifyResponse(pid=os.getpid())
+
+
+# Top-level ASGI app: Socket.IO handles /socket.io/* (incl. websocket upgrade),
+# everything else falls through to FastAPI. Serve this (app.api:socket_app).
+socket_app = socketio.ASGIApp(sio, other_asgi_app=app)

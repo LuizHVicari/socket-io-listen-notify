@@ -23,13 +23,8 @@ async def get_connection(
 Connection = Annotated[psycopg.AsyncConnection, Depends(get_connection)]
 
 
-async def get_listener() -> AsyncGenerator[PgListener]:
-    # A listener needs its own connection: LISTEN blocks while consuming
-    # notifications, so it cannot share the pool.
-    async with await psycopg.AsyncConnection.connect(
-        settings.database_url, autocommit=True
-    ) as connection:
-        yield PgListener(connection)
-
-
-Listener = Annotated[PgListener, Depends(get_listener)]
+async def connect_listener() -> PgListener:
+    # Listener factory: each call opens its own dedicated autocommit connection.
+    # LISTEN blocks while consuming notifications, so it cannot share the pool.
+    connection = await psycopg.AsyncConnection.connect(settings.database_url, autocommit=True)
+    return PgListener(connection)

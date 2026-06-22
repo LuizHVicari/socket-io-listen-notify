@@ -10,7 +10,11 @@ infra:
 
 # Run the API locally with autoreload against containerized Postgres
 dev host="127.0.0.1" port="8000": infra
-    uv run fastapi dev app/api.py --host {{host}} --port {{port}}
+    uv run uvicorn app.api:socket_app --reload --host {{host}} --port {{port}}
+
+# Run the test suite
+test *args:
+    uv run pytest {{args}}
 
 # Build and start the full production stack (Postgres + Gunicorn API)
 prod:

@@ -15,4 +15,4 @@ RUN uv sync --frozen --no-dev
 
 EXPOSE 8000
 
-CMD ["uv", "run", "gunicorn", "app.api:app", "-c", "gunicorn.config.py"]
+CMD ["uv", "run", "gunicorn", "app.api:socket_app", "-c", "gunicorn.config.py"]

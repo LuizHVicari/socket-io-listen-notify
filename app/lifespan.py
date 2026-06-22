@@ -8,11 +8,11 @@ from app.config import settings
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI) -> AsyncGenerator[dict[str, AsyncConnectionPool]]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     pool = AsyncConnectionPool(settings.database_url, open=False)
     await pool.open()
+    app.state.pool = pool
     try:
-        # exposed on request.app.state.pool for dependencies
-        yield {"pool": pool}
+        yield
     finally:
         await pool.close()
